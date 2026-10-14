@@ -2,6 +2,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p releases
+codesign --verify --deep --strict -R='identifier "local.tyler.framerecorder" and certificate leaf = H"6EAFE237D7C3691674166F8D8446ADF51F6CDE9A"' 'tools/framerecorder/build/框录.app'
+
 package() {
   local name="$1" source="$2" file="$3" minimum="$4"
   local stage="build/package-$file"
@@ -14,5 +16,5 @@ package() {
   hdiutil create -volname "$name" -srcfolder "$stage" -ov -format UDZO "releases/$file.dmg"
 }
 package '照片置顶' 'tools/photopin/照片置顶.app' 'PhotoPin-1.1.0-macOS-arm64' '12'
-package '框录' 'tools/framerecorder/build/框录.app' 'FrameRecorder-1.2.0-macOS-arm64' '15'
+package '框录' 'tools/framerecorder/build/框录.app' 'FrameRecorder-1.2.1-macOS-arm64' '15'
 (cd releases && shasum -a 256 *.dmg > SHA256SUMS.txt)
