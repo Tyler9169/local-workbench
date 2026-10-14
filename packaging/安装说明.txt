@@ -1,0 +1,14 @@
+本地工作台 2.1.0
+
+适用：Apple Silicon（M1/M2/M3/M4 等）Mac，macOS 14 或更新版本。
+将「本地工作台.app」拖入 Applications，然后从应用程序目录打开。
+内置 Python 运行环境，不需要另装开发工具。
+启动后自动打开浏览器，菜单栏提供打开页面、数据目录和退出操作。
+数据保存在 ~/Library/Application Support/LocalWorkbench，升级时保留。
+
+这是未经 Apple 开发者签名和公证的测试版。
+如系统阻止打开，请先确认来源为 Tyler9169/local-workbench 的 GitHub Release，
+再由你在「系统设置 → 隐私与安全性」中允许本次打开。
+不需要关闭 Gatekeeper 或修改系统安全策略。
+
+应用提供工作台，不捆绑第三方工具。首次启动为空清单，可自行添加应用、网页和目录。

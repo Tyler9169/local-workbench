@@ -6,3 +6,10 @@ data/
 .env
 .env.*
 *.log
+
+.venv-build/
+build/
+releases/
+*.spec
+
+*.app/

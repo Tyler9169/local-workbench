@@ -6,6 +6,22 @@
 
 ![工作台预览](docs/preview.png)
 
+## 下载安装包
+
+[前往 GitHub Releases 下载](https://github.com/Tyler9169/local-workbench/releases/tag/v2.1.0)，或点击工作台左下角「下载安装包」。
+
+| 应用 | 平台 | 系统要求 |
+| --- | --- | --- |
+| 本地工作台 2.1.0 | Apple Silicon Mac | macOS 14+ |
+| 照片置顶 1.0 | Apple Silicon Mac | macOS 12+ |
+| 框录 1.1 | Apple Silicon Mac | macOS 15+ |
+
+打开 DMG，将应用拖入 Applications。工作台安装包内置 Python，无需另装运行环境；数据保存在 `~/Library/Application Support/LocalWorkbench`。通过菜单栏打开页面或退出服务。
+
+这些是未经过 Apple 开发者签名、公证的测试版。首次打开可能被系统拦截，请核对来源后在「系统设置 → 隐私与安全性」允许本次打开。框录需要用户手动授权屏幕录制，开启麦克风时需要麦克风授权。Intel Mac、Windows 和 Linux 暂无二进制安装包；工作台可继续通过下方源码部署。
+
+工作台首次启动为空清单；两个自制工具是独立安装包，安装后可通过「添加工具」接入。最低系统版本依据编译目标和依赖检查，实际运行验证在 macOS 26 的 Apple Silicon Mac 上完成，尚未逐一测试旧系统。
+
 ## 快速开始
 
 安装 Python 3.10 或更新版本，然后下载本仓库 ZIP 并解压，或运行：
@@ -91,3 +107,18 @@ node --check dist/app.js
 ## 许可
 
 MIT。欢迎按自己的工作流修改与分享。
+
+## 构建 macOS 安装包
+
+需要 Xcode Command Line Tools 和构建用 Python。
+
+```sh
+python3 -m venv .venv-build
+.venv-build/bin/python -m pip install pyinstaller==6.16.0
+./packaging/build-macos.sh
+zsh tools/photopin/build.sh
+zsh tools/framerecorder/build.sh
+./packaging/package-tools.sh
+```
+
+构建产物位于 `releases/`，不进入 Git；通过 GitHub Releases 分发。应用运行数据不会被打包。自制工具源代码位于 `tools/`。
