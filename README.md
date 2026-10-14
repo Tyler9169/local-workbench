@@ -8,13 +8,13 @@
 
 ## 下载安装包
 
-[前往 GitHub Releases 下载](https://github.com/Tyler9169/local-workbench/releases/tag/v2.2.2)，或点击工作台左下角「下载安装包」。
+[前往 GitHub Releases 下载](https://github.com/Tyler9169/local-workbench/releases/tag/v2.2.3)，或点击工作台左下角「下载安装包」。
 
 | 应用 | 平台 | 系统要求 |
 | --- | --- | --- |
-| 本地工作台 2.2.2 | Apple Silicon Mac | macOS 14+ |
+| 本地工作台 2.2.3 | Apple Silicon Mac | macOS 14+ |
 | 照片置顶 1.1.0 | Apple Silicon Mac | macOS 12+ |
-| 框录 1.2.1 | Apple Silicon Mac | macOS 15+ |
+| 框录 1.2.2 | Apple Silicon Mac | macOS 15+ |
 
 打开 DMG，将应用拖入 Applications。工作台安装包内置 Python，无需另装运行环境；数据保存在 `~/Library/Application Support/LocalWorkbench`。通过菜单栏打开页面或退出服务。
 
@@ -153,3 +153,5 @@ zsh tools/framerecorder/build.sh
 框录构建脚本支持本机 `~/Library/Application Support/LocalWorkbenchSigning/signing.json` 配置。`keychain` 指向私有签名钥匙串，`apps` 以 Bundle ID 为键，值中的 `certificateSHA1` 固定证书身份；可选 `passwordFile` 指向权限为 0600 的本地钥匙串密码文件。私钥、密码和配置不得提交到仓库。框录缺少固定身份配置时直接停止构建；其他应用未配置时可使用 `CODE_SIGN_IDENTITY`。配置后拒绝不同身份覆盖，签名失败不会退回 ad-hoc。
 
 自签名可以提供跨版本稳定身份，但不等于 Developer ID 或 Apple 公证，首次安装仍可能被系统拦截。从 ad-hoc 迁移时可能需要重新授权一次。后续版本必须使用同一签名身份，发布前验证权限延续；更新器也会拒绝不满足当前身份要求的包。长期保存私钥并制作安全备份。当前 GitHub 发布包不因本地配置而自动改变。
+
+框录 1.2.2 修复显示器参数通知反复唤起窗口的问题：关闭控制面板后保持隐藏，实际布局变化只处理选区；主动打开、菜单和快捷键仍可呼出。继续使用 1.2.1 的固定签名，更新保留设置。

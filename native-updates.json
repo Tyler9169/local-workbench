@@ -9,11 +9,11 @@
       "notes": "新增检查更新、一键更新和自动备份；保留照片、锁定状态、窗口位置与缩放比例。"
     },
     "local.tyler.framerecorder": {
-      "version": "1.2.1",
-      "url": "https://github.com/Tyler9169/local-workbench/releases/download/v2.2.2/FrameRecorder-1.2.1-macOS-arm64.zip",
-      "sha256": "037d4f7f12f89bb0d572575b207df3328208812cd5ae8a2193d0e348c82933f6",
+      "version": "1.2.2",
+      "url": "https://github.com/Tyler9169/local-workbench/releases/download/v2.2.3/FrameRecorder-1.2.2-macOS-arm64.zip",
+      "sha256": "3b92a3a36b739dedce50efc0078f769c434f3fa78c223a0271404152f1f65912",
       "minimumSystemVersion": "15.0",
-      "notes": "固定自签名，后续更新校验相同身份并保留设置。旧临时签名首次迁移可能需重新授权一次；尚未经 Apple 公证。"
+      "notes": "修复显示器参数通知导致主窗口反复弹出；沿用固定签名，保留原设置与已有授权。旧临时签名首次迁移可能需重新授权一次；尚未经 Apple 公证。"
     }
   }
 }

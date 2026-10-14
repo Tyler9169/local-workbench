@@ -27,7 +27,7 @@ for name in ["traversal", "symlink", "duplicate", "wrongroot", "localmismatch", 
     rejected(name) { try NativeUpdater.validateZip(Data(contentsOf: fixtures.appendingPathComponent(name + ".zip")), appName: "Test.app") }
 }
 if CommandLine.arguments.count > 2 {
-    for (filename, appName) in [("PhotoPin-1.1.0-macOS-arm64.zip", "照片置顶.app"), ("FrameRecorder-1.2.1-macOS-arm64.zip", "框录.app")] {
+    for (filename, appName) in [("PhotoPin-1.1.0-macOS-arm64.zip", "照片置顶.app"), ("FrameRecorder-1.2.2-macOS-arm64.zip", "框录.app")] {
         let file = URL(fileURLWithPath: CommandLine.arguments[2]).appendingPathComponent(filename)
         if FileManager.default.fileExists(atPath: file.path) {
             try NativeUpdater.validateZip(Data(contentsOf: file), appName: appName); passed += 1
