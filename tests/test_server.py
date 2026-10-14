@@ -1,4 +1,6 @@
 import http.client
+import os
+from types import SimpleNamespace
 import json
 import plistlib
 import shutil
@@ -114,7 +116,7 @@ class DiscoveryTests(WorkbenchTests):
             root.mkdir()
         self.roots_patch = patch.object(server.discovery, 'APP_ROOTS', self.roots)
         self.roots_patch.start()
-        self.platform_patch = patch.object(server.discovery.sys, 'platform', 'darwin')
+        self.platform_patch = patch.object(server.discovery, 'sys', SimpleNamespace(platform='darwin'))
         self.platform_patch.start()
 
     def tearDown(self):
@@ -162,13 +164,14 @@ class DiscoveryTests(WorkbenchTests):
         (broken / 'Contents/Info.plist').write_bytes(plistlib.dumps(['not a dictionary']))
         missing = self.app('Missing')
         (missing / 'Contents/MacOS/test').unlink()
-        nonexec = self.app('Nonexec')
-        (nonexec / 'Contents/MacOS/test').chmod(0o644)
+        if os.name != 'nt':
+            nonexec = self.app('Nonexec')
+            (nonexec / 'Contents/MacOS/test').chmod(0o644)
         self.assertEqual(self.tools(), [])
 
     def test_auto_action_resolves_current_install_and_disallows_mutation(self):
         app = self.app()
-        with patch.object(server.subprocess, 'run') as run:
+        with patch.object(server, 'sys', SimpleNamespace(platform='darwin')), patch.object(server.subprocess, 'run') as run:
             self.assertEqual(self.request('/api/action', {'id': 'auto-photopin', 'action': 'open'})[0], 200)
             run.assert_called_once_with(['/usr/bin/open', str(app.resolve())], check=True, timeout=10)
             run.reset_mock()
@@ -180,7 +183,7 @@ class DiscoveryTests(WorkbenchTests):
 
     def test_other_platforms_skip_discovery(self):
         self.app()
-        with patch.object(server.discovery.sys, 'platform', 'linux'):
+        with patch.object(server.discovery, 'sys', SimpleNamespace(platform='linux')):
             self.assertEqual(self.tools(), [])
 
 if __name__ == '__main__':
