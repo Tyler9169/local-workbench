@@ -28,8 +28,8 @@ class LifecycleTests(unittest.TestCase):
             names=['app_server.py','updater.py','discovery.py','version.py','dist/index.html','dist/app.js','dist/style.css','dist/favicon.svg']
             with zipfile.ZipFile(raw,'w',zipfile.ZIP_DEFLATED) as z:
                 for name in names:
-                    z.writestr(name,"VERSION = '2.2.1'\n" if name=='version.py' else (ROOT/name).read_bytes())
-                z.writestr('package.json',json.dumps({'version':'2.2.1','bootstrap':1}))
+                    z.writestr(name,"VERSION = '99.0.0'\n" if name=='version.py' else (ROOT/name).read_bytes())
+                z.writestr('package.json',json.dumps({'version':'99.0.0','bootstrap':1}))
             package=base/'fixture.zip';package.write_bytes(raw.getvalue())
             with socket.socket() as sock:
                 sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
@@ -39,8 +39,8 @@ from pathlib import Path
 sys.path.insert(0,{str(ROOT)!r})
 import server
 raw=Path({str(package)!r}).read_bytes()
-server.updater.latest_release=lambda:dict(version='2.2.1',prerelease=True,url='https://github.com/Tyler9169/local-workbench/releases/tag/v2.2.1')
-server.updater.fetch=lambda url,limit:(hashlib.sha256(raw).hexdigest()+'  LocalWorkbench-2.2.1-runtime.zip\\n').encode() if url.endswith('SHA256SUMS.txt') else raw
+server.updater.latest_release=lambda:dict(version='99.0.0',prerelease=True,url='https://github.com/Tyler9169/local-workbench/releases/tag/v99.0.0')
+server.updater.fetch=lambda url,limit:(hashlib.sha256(raw).hexdigest()+'  LocalWorkbench-99.0.0-runtime.zip\\n').encode() if url.endswith('SHA256SUMS.txt') else raw
 server.ThreadingHTTPServer(('127.0.0.1',{port}),server.Handler).serve_forever()
 ''',encoding='utf-8')
             env={**os.environ,'WORKBENCH_DATA_DIR':str(data)}
@@ -61,10 +61,10 @@ server.ThreadingHTTPServer(('127.0.0.1',{port}),server.Handler).serve_forever()
                     time.sleep(.1)
                 self.fail('Update restart timed out')
             try:
-                wait_version('2.2.0')
+                wait_version(__import__('version').VERSION)
                 self.assertTrue(post('/api/update/check',{})['available'])
-                post('/api/update/install',{'version':'2.2.1','favorites':['personal']})
-                wait_version('2.2.1')
+                post('/api/update/install',{'version':'99.0.0','favorites':['personal']})
+                wait_version('99.0.0')
                 self.assertEqual((data/'tools.json').read_text(encoding='utf-8'),tools)
                 self.assertIn('personal',[t['id'] for t in get('/api/tools')['tools']])
                 backups=list((data/'updates/backups').glob('*/browser-favorites.json'))

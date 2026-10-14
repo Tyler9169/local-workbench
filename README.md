@@ -8,13 +8,13 @@
 
 ## 下载安装包
 
-[前往 GitHub Releases 下载](https://github.com/Tyler9169/local-workbench/releases/tag/v2.2.0)，或点击工作台左下角「下载安装包」。
+[前往 GitHub Releases 下载](https://github.com/Tyler9169/local-workbench/releases/tag/v2.2.1)，或点击工作台左下角「下载安装包」。
 
 | 应用 | 平台 | 系统要求 |
 | --- | --- | --- |
-| 本地工作台 2.2.0 | Apple Silicon Mac | macOS 14+ |
-| 照片置顶 1.0 | Apple Silicon Mac | macOS 12+ |
-| 框录 1.1 | Apple Silicon Mac | macOS 15+ |
+| 本地工作台 2.2.1 | Apple Silicon Mac | macOS 14+ |
+| 照片置顶 1.1.0 | Apple Silicon Mac | macOS 12+ |
+| 框录 1.2.0 | Apple Silicon Mac | macOS 15+ |
 
 打开 DMG，将应用拖入 Applications。工作台安装包内置 Python，无需另装运行环境；数据保存在 `~/Library/Application Support/LocalWorkbench`。通过菜单栏打开页面或退出服务。
 
@@ -134,3 +134,16 @@ zsh tools/framerecorder/build.sh
 此功能更新工作台运行代码与界面，不替换照片置顶、框录或系统权限。需要升级原生启动器、Python 运行环境或更新协议时，会提示下载新安装包。更新包的 SHA256 用于完整性检查；发布仍依赖 GitHub 仓库和 HTTPS，并非 Apple 公证。
 
 发布流程：先运行测试和 `packaging/build-macos.sh`，再运行 `python3 packaging/build-runtime.py`；上传 DMG、runtime ZIP 与 SHA256SUMS 后，最后修改 `update.json` 指向已发布版本。
+
+
+### 照片置顶与框录更新
+
+照片置顶：点击 macOS 菜单栏的「照片置顶 → 检查更新…」。框录：控制面板或菜单栏图标中的「检查更新…」。发现新版后点「一键更新」，完成后自动重新打开；录制或导出期间不安装更新。
+
+两个应用从本仓库 `native-updates.json` 检查版本，从 GitHub Releases 下载专用 ZIP，验证 SHA-256、包标识、版本和代码签名。更新在原位置替换程序，保留 `local.tyler.photopin` / `local.tyler.framerecorder` 的 UserDefaults 和照片、录屏文件；备份设置保存在 `~/Library/Application Support/<Bundle ID>/Updates/`，旧应用保存在原安装位置旁的 `.backup-<UUID>` 路径。新版本 60 秒内未完成启动时恢复旧版，失败版本保留供排查。应用需放在当前用户可写的位置，不能直接从 DMG 或 App Translocation 中更新。
+
+照片置顶保留照片路径、锁定状态和窗口位置，并从此版开始保存缩放比例。框录保留两个声音开关，并从此版开始保存帧率、鼠标指针选项。更新不清理任何 macOS 权限记录，也不重新签名下载的应用。
+
+当前发布包使用 ad-hoc 签名，**无法保证屏幕和麦克风授权跨版本保留**。Apple 的 [TN3127](https://developer.apple.com/documentation/technotes/tn3127-inside-code-signing-requirements) 说明 ad-hoc 的身份要求绑定具体代码版本。正式发布应设置同一个 `CODE_SIGN_IDENTITY`（Developer ID）构建后公证，并长期保持签名身份、Bundle ID 与安装位置；更新器会要求新包满足当前正式签名的 designated requirement。项目不会通过弱化签名要求或修改 TCC 数据库绕过权限。
+
+开发者：构建两个工具后运行 `bash packaging/package-tools.sh` 生成 DMG 和更新 ZIP；发布前更新 `native-updates.json` 的版本、URL、SHA-256（以实际 ZIP 为准），上传所有资产后再公布清单。`python3 tests/native/run.py` 验证版本比较、来源、压缩包路径与链接拒绝，以及真实原生应用替换和启动失败回滚。

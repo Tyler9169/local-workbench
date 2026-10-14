@@ -100,6 +100,10 @@ final class RegionView: NSView {
     var recordButton:NSButton!
     var reselectButton:NSButton!
     var stopMenu:NSMenuItem!
+    lazy var updater = NativeUpdater(canInstall: { [weak self] in
+        guard let self = self else { return false }; return !self.isBusy && !self.isRecording && !self.finishing
+    })
+    @objc func checkUpdates(){updater.checkForUpdates()}
     var isBusy=false
     var isRecording=false
     var finishing=false
@@ -119,7 +123,7 @@ final class RegionView: NSView {
         do {try FileManager.default.createDirectory(at:saveDirectory,withIntermediateDirectories:true);try FileManager.default.createDirectory(at:stateDirectory,withIntermediateDirectories:true)}catch{}
         setupMenu();setupHome();setupToolbar();setupHotkeys()
         NotificationCenter.default.addObserver(self,selector:#selector(displaysChanged),name:NSApplication.didChangeScreenParametersNotification,object:nil)
-        showHome();writeState("idle")
+        showHome();writeState("idle");updater.didLaunch()
     }
     func applicationShouldHandleReopen(_ sender:NSApplication,hasVisibleWindows flag:Bool)->Bool {showHome();return true}
     func windowShouldClose(_ sender:NSWindow)->Bool {sender.orderOut(nil);return false}
@@ -136,7 +140,7 @@ final class RegionView: NSView {
         func item(_ name:String,_ selector:Selector){let m=NSMenuItem(title:name,action:selector,keyEquivalent:"");m.target=self;menu.addItem(m)}
         item("框选区域    ⌃⌥A",#selector(selectArea));item("开始 / 停止录制    ⌃⌥R",#selector(toggleRecording))
         stopMenu=menu.items.last!
-        menu.addItem(.separator());item("显示控制面板",#selector(showHome));item("打开输出文件夹",#selector(openFolder));item("屏幕录制权限",#selector(requestPermission));menu.addItem(.separator());item("退出框录",#selector(quit))
+        menu.addItem(.separator());item("显示控制面板",#selector(showHome));item("打开输出文件夹",#selector(openFolder));item("屏幕录制权限",#selector(requestPermission));item("检查更新…",#selector(checkUpdates));menu.addItem(.separator());item("退出框录",#selector(quit))
         statusItem.menu=menu
     }
     func setupHome(){
@@ -146,8 +150,11 @@ final class RegionView: NSView {
         let sub=text("区域截图与录屏 · 原生分辨率 · 本机保存",size:13,color:.secondaryLabelColor)
         let choose=button("＋ 框选屏幕区域",#selector(selectArea));choose.bezelColor=gold;choose.contentTintColor = .black
         let shortcut=text("随时调用：Control + Option + A\n开始 / 停止：Control + Option + R",size:13,color:.secondaryLabelColor)
-        fpsBox.addItems(withTitles:["15 fps","24 fps","30 fps","60 fps"]);fpsBox.selectItem(at:2)
-        cursorBox.state = .on
+        fpsBox.addItems(withTitles:["15 fps","24 fps","30 fps","60 fps"]);fpsBox.selectItem(withTitle:UserDefaults.standard.string(forKey:"fps") ?? "30 fps")
+        if fpsBox.indexOfSelectedItem < 0 {fpsBox.selectItem(at:2)}
+        cursorBox.state = (UserDefaults.standard.object(forKey:"cursor") as? Bool ?? true) ? .on:.off
+        fpsBox.target=self;fpsBox.action=#selector(settingsChanged)
+        cursorBox.target=self;cursorBox.action=#selector(settingsChanged)
         let settings=NSStackView(views:[text("录制帧率",size:13),fpsBox,cursorBox]);settings.spacing=14
         systemAudioBox.state=UserDefaults.standard.bool(forKey:"systemAudio") ? .on:.off
         microphoneBox.state=UserDefaults.standard.bool(forKey:"microphone") ? .on:.off
@@ -155,7 +162,7 @@ final class RegionView: NSView {
         let audioSettings=NSStackView(views:[text("录制声音",size:13),systemAudioBox,microphoneBox]);audioSettings.spacing=18
         let limits=text("选好后可拖动整个区域，或拖动八个控制点缩放。录制期间选区锁定，红框与计时提示始终可见。\n两个声音开关可独立选择；都关闭即无声录制。麦克风使用系统默认输入设备。每次选择一块显示器内的区域。",size:13,color:.secondaryLabelColor)
         statusLabel=text("",size:12,color:gold)
-        let actions=NSStackView(views:[button("授权屏幕录制",#selector(requestPermission)),button("输出文件夹",#selector(openFolder))]);actions.spacing=12
+        let actions=NSStackView(views:[button("授权屏幕录制",#selector(requestPermission)),button("输出文件夹",#selector(openFolder)),button("检查更新…",#selector(checkUpdates))]);actions.spacing=12
         let stack=NSStackView(views:[title,sub,choose,shortcut,settings,audioSettings,limits,statusLabel,actions]);stack.orientation = .vertical;stack.alignment = .leading;stack.spacing=18;stack.translatesAutoresizingMaskIntoConstraints=false
         home.contentView!.addSubview(stack)
         NSLayoutConstraint.activate([stack.leadingAnchor.constraint(equalTo:home.contentView!.leadingAnchor,constant:30),stack.trailingAnchor.constraint(equalTo:home.contentView!.trailingAnchor,constant:-30),stack.topAnchor.constraint(equalTo:home.contentView!.topAnchor,constant:25)])
@@ -225,7 +232,7 @@ final class RegionView: NSView {
     }
     @objc func cancelSelection(){
         guard !isBusy else {return}
-        clearOverlays();showHome();writeState("idle")
+        clearOverlays();showHome();writeState("idle");updater.didLaunch()
     }
     func clearOverlays(){for w in overlays{w.orderOut(nil)};overlays.removeAll();selected=nil;toolbar?.orderOut(nil)}
     @objc func openFolder(){NSWorkspace.shared.open(saveDirectory)}
@@ -249,6 +256,10 @@ final class RegionView: NSView {
         config.queueDepth=5;config.pixelFormat=kCVPixelFormatType_32BGRA
         config.colorSpaceName=CGColorSpace.sRGB
         return (filter,config)
+    }
+    @objc func settingsChanged(){
+        UserDefaults.standard.set(fpsBox.titleOfSelectedItem,forKey:"fps")
+        UserDefaults.standard.set(cursorBox.state == .on,forKey:"cursor")
     }
     @objc func audioChanged(_ sender:NSButton){
         UserDefaults.standard.set(systemAudioBox.state == .on,forKey:"systemAudio")

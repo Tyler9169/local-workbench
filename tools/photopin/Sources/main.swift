@@ -154,7 +154,7 @@ final class PhotoView: NSView {
     }
 }
 
-final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
+@MainActor final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     var window: NSWindow!
     let photo = PhotoView(frame: .zero)
     let lockButton = NSButton(title: "锁定位置", target: nil, action: nil)
@@ -164,6 +164,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     var lockMenu: NSMenuItem!
     var locked = false
     let defaults = UserDefaults.standard
+    let updater = NativeUpdater()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         buildMenu()
@@ -219,9 +220,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let zoomBar = NSStackView(views: [minus, zoomLabel, plus, fit])
         zoomBar.orientation = .horizontal
         zoomBar.spacing = 6
+        let savedZoom = defaults.double(forKey: "photoZoom")
         photo.onZoom = { [weak self] zoom in
             self?.zoomLabel.stringValue = "\(Int((zoom * 100).rounded()))%"
             self?.updateStatus()
+            self?.defaults.set(Double(zoom), forKey: "photoZoom")
         }
         for view in [photo, controls] {
             view.translatesAutoresizingMaskIntoConstraints = false
@@ -258,15 +261,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         if !NSScreen.screens.contains(where: { $0.visibleFrame.intersection(window.frame).width >= 100 && $0.visibleFrame.intersection(window.frame).height >= 80 }) {
             window.center()
         }
+        if savedZoom > 0 { photo.changeZoom(by: CGFloat(savedZoom)) }
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         root.refreshHover()
+        updater.didLaunch()
     }
 
     func buildMenu() {
         let menu = NSMenu()
         let appItem = NSMenuItem()
         let appMenu = NSMenu()
+        let update = appMenu.addItem(withTitle: "检查更新…", action: #selector(NativeUpdater.checkForUpdates), keyEquivalent: "")
+        update.target = updater
+        appMenu.addItem(.separator())
         appMenu.addItem(withTitle: "退出照片置顶", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         appItem.submenu = appMenu
         menu.addItem(appItem)
@@ -341,8 +349,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
 }
 
+MainActor.assumeIsolated {
 let application = NSApplication.shared
 let delegate = AppDelegate()
 application.setActivationPolicy(.regular)
 application.delegate = delegate
 application.run()
+
+}
