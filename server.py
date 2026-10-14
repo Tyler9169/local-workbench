@@ -1,5 +1,6 @@
 """Local Workbench: standard-library-only, loopback-only tool launcher."""
 import argparse
+import discovery
 import importlib.util
 import json
 import os
@@ -94,6 +95,18 @@ def present(e):
             'status': '网页入口 · 未探测' if is_url else ('位置可用' if available else '位置未找到 · 请编辑')}
 
 
+def catalog(items):
+    existing = [*(INTEGRATION.tools() if INTEGRATION else []), *[present(e) for e in items]]
+    identities = {discovery.bundle_id(t.get('path', '')) for t in existing if t.get('path')}
+    automatic = []
+    for e in discovery.discover():
+        if discovery.bundle_id(e['target']) in identities:
+            continue
+        automatic.append({**present(e), 'managed': True, 'status': '已自动识别',
+                          'note': '从应用程序目录自动识别。安装或移除应用后，工作台会自动更新。'})
+    return [*existing, *automatic]
+
+
 def open_target(e, action):
     e = validate(e)
     if e['type'] == 'url':
@@ -138,12 +151,12 @@ class Handler(BaseHTTPRequestHandler):
         if not self.host_ok():
             return self.send(403, {'error': '不允许的主机。'})
         if self.path == '/api/health':
-            return self.send(200, {'app': 'local-workbench', 'version': '2.0.0'})
+            return self.send(200, {'app': 'local-workbench', 'version': '2.1.1'})
         if self.path == '/api/tools':
             try:
                 with LOCK:
                     items = load()
-                return self.send(200, {'tools': [*(INTEGRATION.tools() if INTEGRATION else []), *[present(e) for e in items]], 'checkedAt': time.strftime('%H:%M:%S')})
+                return self.send(200, {'tools': catalog(items), 'checkedAt': time.strftime('%H:%M:%S')})
             except (ValueError, OSError):
                 return self.send(500, {'error': '工具配置无法读取，请检查 data/tools.json；原文件没有被覆盖。'})
         files = {'/': ('index.html', 'text/html'), '/app.js': ('app.js', 'text/javascript'),
@@ -172,6 +185,8 @@ class Handler(BaseHTTPRequestHandler):
                 items = load()
                 if self.path == '/api/tools':
                     entry = validate(body)
+                    if entry['id'].startswith('auto-'):
+                        raise ValueError('自动识别入口无需手动配置。')
                     if INTEGRATION and any(t['id'] == entry['id'] for t in INTEGRATION.tools()):
                         raise ValueError('这是本机集成入口，请在原配置中编辑。')
                     if any(x['target'] == entry['target'] and x['id'] != entry['id'] for x in items):
@@ -185,6 +200,8 @@ class Handler(BaseHTTPRequestHandler):
                 if set(body) != allowed or not all(isinstance(v, str) for v in body.values()):
                     raise ValueError('请求格式错误。')
                 entry = next((x for x in items if x['id'] == body['id']), None)
+                if not entry and self.path == '/api/action':
+                    entry = next((e for e in discovery.discover() if e['id'] == body['id']), None)
                 if not entry and INTEGRATION and self.path == '/api/action':
                     if body['action'] not in ('open', 'folder', 'studio'):
                         raise ValueError('未允许的操作。')

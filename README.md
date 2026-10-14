@@ -8,11 +8,11 @@
 
 ## 下载安装包
 
-[前往 GitHub Releases 下载](https://github.com/Tyler9169/local-workbench/releases/tag/v2.1.0)，或点击工作台左下角「下载安装包」。
+[前往 GitHub Releases 下载](https://github.com/Tyler9169/local-workbench/releases/tag/v2.1.1)，或点击工作台左下角「下载安装包」。
 
 | 应用 | 平台 | 系统要求 |
 | --- | --- | --- |
-| 本地工作台 2.1.0 | Apple Silicon Mac | macOS 14+ |
+| 本地工作台 2.1.1 | Apple Silicon Mac | macOS 14+ |
 | 照片置顶 1.0 | Apple Silicon Mac | macOS 12+ |
 | 框录 1.1 | Apple Silicon Mac | macOS 15+ |
 
@@ -20,7 +20,7 @@
 
 这些是未经过 Apple 开发者签名、公证的测试版。首次打开可能被系统拦截，请核对来源后在「系统设置 → 隐私与安全性」允许本次打开。框录需要用户手动授权屏幕录制，开启麦克风时需要麦克风授权。Intel Mac、Windows 和 Linux 暂无二进制安装包；工作台可继续通过下方源码部署。
 
-工作台首次启动为空清单；两个自制工具是独立安装包，安装后可通过「添加工具」接入。最低系统版本依据编译目标和依赖检查，实际运行验证在 macOS 26 的 Apple Silicon Mac 上完成，尚未逐一测试旧系统。
+工作台自动识别 `/Applications` 和 `~/Applications` 中的照片置顶、框录，每 10 秒及切回页面时检查，无需填写路径。应用按 bundle ID 识别，改名仍可发现；两处都有安装时优先用户 Applications，已有同一应用入口不会重复显示。其他工具仍可手动添加。最低系统版本依据编译目标和依赖检查，实际运行验证在 macOS 26 的 Apple Silicon Mac 上完成，尚未逐一测试旧系统。
 
 ## 快速开始
 
@@ -32,7 +32,7 @@ cd local-workbench
 python3 server.py
 ```
 
-浏览器会自动打开 **http://127.0.0.1:43120**。点击「添加工具」，填写名称、类型、路径或网址即可。初次启动是空工作台，不附带作者的个人工具和路径。
+浏览器会自动打开 **http://127.0.0.1:43120**。点击「添加工具」，填写名称、类型、路径或网址即可。初次启动会识别已安装的照片置顶和框录，不附带作者的个人工具和路径。
 
 - macOS：也可双击 `start.command`；如果没有执行权限，先运行 `chmod +x start.command`。
 - Windows：安装 Python 后双击 `start.bat`，或运行 `py -3 server.py`。

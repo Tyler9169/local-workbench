@@ -1,5 +1,7 @@
 import http.client
 import json
+import plistlib
+import shutil
 import sys
 import tempfile
 import threading
@@ -17,6 +19,8 @@ class WorkbenchTests(unittest.TestCase):
         self.data_patch.start()
         self.integration_patch = patch.object(server, 'INTEGRATION', None)
         self.integration_patch.start()
+        self.discovery_patch = patch.object(server.discovery, 'APP_ROOTS', ())
+        self.discovery_patch.start()
         self.http = server.ThreadingHTTPServer(('127.0.0.1', 0), server.Handler)
         threading.Thread(target=self.http.serve_forever, daemon=True).start()
         self.entry = dict(id='example', name='示例', type='url', category='日常工具', target='https://example.com', description='用途')
@@ -26,6 +30,7 @@ class WorkbenchTests(unittest.TestCase):
         self.http.server_close()
         self.data_patch.stop()
         self.integration_patch.stop()
+        self.discovery_patch.stop()
         self.temp.cleanup()
 
     def request(self, path, body=None, headers=None):
@@ -100,6 +105,83 @@ class WorkbenchTests(unittest.TestCase):
     def test_oversized_and_wrong_content_type(self):
         self.assertEqual(self.request('/api/tools', {'text': 'a' * 17000})[0], 413)
         self.assertEqual(self.request('/api/tools', self.entry, {'Content-Type': 'text/plain'})[0], 415)
+
+class DiscoveryTests(WorkbenchTests):
+    def setUp(self):
+        super().setUp()
+        self.roots = (Path(self.temp.name) / 'user', Path(self.temp.name) / 'system')
+        for root in self.roots:
+            root.mkdir()
+        self.roots_patch = patch.object(server.discovery, 'APP_ROOTS', self.roots)
+        self.roots_patch.start()
+        self.platform_patch = patch.object(server.discovery.sys, 'platform', 'darwin')
+        self.platform_patch.start()
+
+    def tearDown(self):
+        self.platform_patch.stop()
+        self.roots_patch.stop()
+        super().tearDown()
+
+    def app(self, name='Renamed', identity='local.tyler.photopin', root=0):
+        app = self.roots[root] / (name + '.app')
+        (app / 'Contents/MacOS').mkdir(parents=True)
+        (app / 'Contents/Info.plist').write_bytes(plistlib.dumps(dict(CFBundleIdentifier=identity, CFBundleExecutable='test')))
+        executable = app / 'Contents/MacOS/test'
+        executable.write_text('#!/bin/sh\nexit 0\n')
+        executable.chmod(0o755)
+        return app
+
+    def tools(self):
+        code, body = self.request('/api/tools')
+        self.assertEqual(code, 200)
+        return json.loads(body)['tools']
+
+    def test_install_remove_and_renamed_apps(self):
+        self.assertEqual(self.tools(), [])
+        photo = self.app()
+        self.assertEqual([t['name'] for t in self.tools()], ['照片置顶'])
+        frame = self.app('Frame', 'local.tyler.framerecorder')
+        self.assertEqual({t['name'] for t in self.tools()}, {'照片置顶', '框录'})
+        shutil.rmtree(photo)
+        self.assertEqual([t['name'] for t in self.tools()], ['框录'])
+        shutil.rmtree(frame)
+        self.assertEqual(self.tools(), [])
+        self.assertFalse((server.DATA / 'tools.json').exists())
+
+    def test_user_copy_preferred_and_manual_entry_deduplicated(self):
+        user = self.app(root=0)
+        self.app(root=1)
+        self.assertEqual(len(self.tools()), 1)
+        self.assertEqual(self.tools()[0]['path'], str(user.resolve()))
+        self.request('/api/tools', {**self.entry, 'type': 'app', 'target': str(user)})
+        self.assertEqual([t['id'] for t in self.tools()], ['example'])
+
+    def test_invalid_and_unrelated_bundles_ignored(self):
+        self.app('Other', 'other.app')
+        broken = self.app('Broken')
+        (broken / 'Contents/Info.plist').write_bytes(plistlib.dumps(['not a dictionary']))
+        missing = self.app('Missing')
+        (missing / 'Contents/MacOS/test').unlink()
+        nonexec = self.app('Nonexec')
+        (nonexec / 'Contents/MacOS/test').chmod(0o644)
+        self.assertEqual(self.tools(), [])
+
+    def test_auto_action_resolves_current_install_and_disallows_mutation(self):
+        app = self.app()
+        with patch.object(server.subprocess, 'run') as run:
+            self.assertEqual(self.request('/api/action', {'id': 'auto-photopin', 'action': 'open'})[0], 200)
+            run.assert_called_once_with(['/usr/bin/open', str(app.resolve())], check=True, timeout=10)
+            run.reset_mock()
+            shutil.rmtree(app)
+            self.assertEqual(self.request('/api/action', {'id': 'auto-photopin', 'action': 'open'})[0], 404)
+            run.assert_not_called()
+        self.assertEqual(self.request('/api/delete', {'id': 'auto-photopin'})[0], 404)
+        self.assertEqual(self.request('/api/tools', {**self.entry, 'id': 'auto-photopin'})[0], 400)
+
+    def test_other_platforms_skip_discovery(self):
+        self.app()
+        with patch.object(server.discovery.sys, 'platform', 'linux'):
+            self.assertEqual(self.tools(), [])
 
 if __name__ == '__main__':
     unittest.main()

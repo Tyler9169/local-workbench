@@ -22,6 +22,7 @@ function render(){
  $('#quick-tools').innerHTML=[...tools.filter(t=>favorites.has(t.id)),...tools.filter(t=>!favorites.has(t.id))].slice(0,3).map(t=>t.id).map(id=>{const t=tools.find(t=>t.id===id);return t?`<button class="quick-item" data-open="${id}" ${busy.has(id)||!t.available?'disabled':''}>${svg(t.icon)}<span>${esc(t.name)}<small>${busy.has(id)?'正在打开…':esc(t.kind)}</small></span><span class="arrow">↗</span></button>`:''}).join('');
 }
 async function refresh(quiet=false){
+ if($('#refresh').disabled)return;
  $('#refresh').disabled=true;
  try{const r=await fetch('/api/tools');const data=await r.json();if(!r.ok)throw Error(data.error||'连接未完成');tools=data.tools;render();$('#status-summary').textContent=tools.length?`${tools.filter(t=>t.available).length} 个可用`:'还没有工具，点击「添加工具」创建第一个入口。';$('#checked').textContent=`状态检查于 ${data.checkedAt}`;if(!quiet)toast(data.warning||'已更新本地入口状态。',Boolean(data.warning));}
  catch(e){$('#status-summary').textContent=e.message||'无法连接工作台，请重新运行启动程序。';if(!quiet)toast('连接中断，请重新打开本地工作台。',true);}
@@ -72,4 +73,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest('button');i
 document.addEventListener('keydown',e=>{if(e.key==='/'&&!['INPUT','TEXTAREA'].includes(document.activeElement.tagName)&&!$('#detail').open){e.preventDefault();$('#search').focus();}});
 refresh(true);
 
-$('#downloads').onclick=()=>{detailId=null;const base='https://github.com/Tyler9169/local-workbench/releases/download/v2.1.0/';$('#detail-content').innerHTML=`<h2>下载安装包</h2><p>适用于 Apple Silicon Mac。</p><div class="download-list">${[['本地工作台','内置运行环境 · macOS 14+','LocalWorkbench-2.1.0-macOS-arm64.dmg'],['照片置顶','图片悬浮、锁定与缩放 · macOS 12+','PhotoPin-1.0-macOS-arm64.dmg'],['框录','区域截图、录屏与声音开关 · macOS 15+','FrameRecorder-1.1-macOS-arm64.dmg']].map(([name,note,file])=>`<a href="${base+file}" target="_blank" rel="noopener noreferrer"><span><strong>${name}</strong><small>${note}</small></span><span>下载 ↓</span></a>`).join('')}</div><p class="field-help">未签名公证的测试版。首次打开可能需要在系统设置中允许；框录还需要屏幕录制和麦克风授权。</p><p><a href="https://github.com/Tyler9169/local-workbench/releases/tag/v2.1.0" target="_blank" rel="noopener noreferrer">安装说明与校验值 ↗</a></p>`;$('#detail').showModal();};
+$('#downloads').onclick=()=>{detailId=null;const base='https://github.com/Tyler9169/local-workbench/releases/download/v2.1.1/';$('#detail-content').innerHTML=`<h2>下载安装包</h2><p>适用于 Apple Silicon Mac。</p><div class="download-list">${[['本地工作台','内置运行环境 · macOS 14+','LocalWorkbench-2.1.1-macOS-arm64.dmg'],['照片置顶','图片悬浮、锁定与缩放 · macOS 12+','PhotoPin-1.0-macOS-arm64.dmg'],['框录','区域截图、录屏与声音开关 · macOS 15+','FrameRecorder-1.1-macOS-arm64.dmg']].map(([name,note,file])=>`<a href="${base+file}" target="_blank" rel="noopener noreferrer"><span><strong>${name}</strong><small>${note}</small></span><span>下载 ↓</span></a>`).join('')}</div><p class="field-help">未签名公证的测试版。首次打开可能需要在系统设置中允许；框录还需要屏幕录制和麦克风授权。</p><p><a href="https://github.com/Tyler9169/local-workbench/releases/tag/v2.1.1" target="_blank" rel="noopener noreferrer">安装说明与校验值 ↗</a></p>`;$('#detail').showModal();};
+
+setInterval(()=>{if(!document.hidden&&!$('#detail').open&&busy.size===0)refresh(true);},10000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!$('#detail').open&&busy.size===0)refresh(true);});
