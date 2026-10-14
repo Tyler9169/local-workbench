@@ -30,11 +30,20 @@ def version_tuple(value):
 
 def fetch(url, limit):
     request = urllib.request.Request(url, headers={'User-Agent': 'LocalWorkbench-Updater', 'Accept': 'application/json' if url == API else 'application/octet-stream'})
-    with urllib.request.urlopen(request, timeout=25) as response:
-        data = response.read(limit + 1)
-    if len(data) > limit:
-        raise ValueError('更新文件超过允许大小。')
-    return data
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(request, timeout=15) as response:
+                data = response.read(limit + 1)
+            if len(data) > limit:
+                raise ValueError('更新文件超过允许大小。')
+            return data
+        except urllib.error.HTTPError as exc:
+            if attempt == 2 or exc.code not in (408, 429, 500, 502, 503, 504):
+                raise
+        except (urllib.error.URLError, TimeoutError, ConnectionError):
+            if attempt == 2:
+                raise
+        time.sleep(attempt + 1)
 
 
 def acquire_lock(path):
