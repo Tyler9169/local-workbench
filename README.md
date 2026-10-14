@@ -8,11 +8,11 @@
 
 ## 下载安装包
 
-[前往 GitHub Releases 下载](https://github.com/Tyler9169/local-workbench/releases/tag/v2.1.1)，或点击工作台左下角「下载安装包」。
+[前往 GitHub Releases 下载](https://github.com/Tyler9169/local-workbench/releases/tag/v2.2.0)，或点击工作台左下角「下载安装包」。
 
 | 应用 | 平台 | 系统要求 |
 | --- | --- | --- |
-| 本地工作台 2.1.1 | Apple Silicon Mac | macOS 14+ |
+| 本地工作台 2.2.0 | Apple Silicon Mac | macOS 14+ |
 | 照片置顶 1.0 | Apple Silicon Mac | macOS 12+ |
 | 框录 1.1 | Apple Silicon Mac | macOS 15+ |
 
@@ -122,3 +122,15 @@ zsh tools/framerecorder/build.sh
 ```
 
 构建产物位于 `releases/`，不进入 Git；通过 GitHub Releases 分发。应用运行数据不会被打包。自制工具源代码位于 `tools/`。
+
+## 检查更新与一键更新
+
+工作台左下角点击「检查更新」，发现新版本后点击「一键更新」。更新清单来自本仓库的 `update.json`，无需 GitHub 账号。当前也会提供测试版更新，面板会明确标注。
+
+更新器只从本仓库 Releases 下载对应的运行文件，校验 SHA256、文件清单与兼容版本，再用独立进程检查新版本能否读取现有配置。更新前备份工具清单、本机集成配置和当前浏览器收藏，随后切换运行版本并自动重启。下载、校验或启动预检失败时不会切换版本；重启调用失败会恢复原版本指针。
+
+个人数据仍留在原数据目录，更新文件位于其中的 `updates/versions`，备份位于 `updates/backups`，不会覆盖 `tools.json`、`integration.py` 或原应用。访问地址不变时，浏览器收藏继续保留。源码部署的工作目录和未提交文件也不会被自动更新覆盖。
+
+此功能更新工作台运行代码与界面，不替换照片置顶、框录或系统权限。需要升级原生启动器、Python 运行环境或更新协议时，会提示下载新安装包。更新包的 SHA256 用于完整性检查；发布仍依赖 GitHub 仓库和 HTTPS，并非 Apple 公证。
+
+发布流程：先运行测试和 `packaging/build-macos.sh`，再运行 `python3 packaging/build-runtime.py`；上传 DMG、runtime ZIP 与 SHA256SUMS 后，最后修改 `update.json` 指向已发布版本。

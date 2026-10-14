@@ -2,7 +2,7 @@
 <a class="skip" href="#tools">跳转到工具</a>
 <aside class="sidebar"><a href="/" class="brand"><img class="brand-logo" src="/favicon.svg" alt=""><span>工作台</span></a>
 <nav aria-label="工具分类" id="nav"></nav>
-<div class="sidebar-foot"><button id="downloads" class="download-button">↓ 下载安装包</button><span class="local-dot"></span> 只在这台电脑上<button id="about" class="text-button">关于这个工作台 <span>↗</span></button></div></aside>
+<div class="sidebar-foot"><button id="downloads" class="download-button">↓ 下载安装包</button><button id="check-update" class="text-button">检查更新</button><span class="local-dot"></span> 只在这台电脑上<button id="about" class="text-button">关于这个工作台 <span>↗</span></button></div></aside>
 <main><header class="topbar"><h1>我的工具</h1><div class="top-actions"><button id="add-tool" class="filter">＋ 添加工具</button><button id="refresh" class="refresh" aria-label="刷新工具状态">↻ <span>刷新状态</span></button></div></header>
 <section class="quick" aria-label="快速入口"><h2 class="quick-label">快速打开</h2><div id="quick-tools"></div></section>
 <section id="tools" class="tools-section" tabindex="-1"><div class="section-heading"><div><h2 id="section-title">全部工具 <span id="count">0</span></h2><p id="status-summary">正在检查本地入口…</p></div><label class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m16 16 5 5"></path></svg><input id="search" type="search" placeholder="搜索名称或用途" aria-label="搜索工具名称或用途"><kbd>/</kbd></label></div>
@@ -10,5 +10,6 @@
 <div id="grid" class="grid" aria-live="polite"></div><div id="empty" class="empty" hidden><span>没有找到对应工具</span><p>添加你的第一个工具，或试试其他关键词。</p><button id="clear" class="secondary">查看全部工具</button></div></section>
 <footer><span id="checked">正在连接本机工作台</span></footer></main>
 <dialog id="detail"><div class="dialog-top"><button class="icon-button" id="close-detail" aria-label="关闭详情">×</button></div><div id="detail-content"></div></dialog>
+<dialog id="updates"><div class="dialog-top"><button class="icon-button" id="close-updates" aria-label="关闭更新">×</button></div><h2>工作台更新</h2><p id="update-version"></p><p id="update-message" role="status" aria-live="polite"></p><p id="update-help" class="field-help">更新前自动备份，保留工具、配置和收藏。</p><div class="dialog-actions"><button class="primary" id="install-update" hidden>一键更新</button><button class="secondary" id="retry-update">检查更新</button></div><p><a id="update-release" target="_blank" rel="noopener noreferrer" hidden>查看版本说明 ↗</a></p></dialog>
 <div id="toast" role="status" aria-live="polite" hidden></div>
 </body></html>

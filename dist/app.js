@@ -73,7 +73,47 @@ document.addEventListener('click',async e=>{const b=e.target.closest('button');i
 document.addEventListener('keydown',e=>{if(e.key==='/'&&!['INPUT','TEXTAREA'].includes(document.activeElement.tagName)&&!$('#detail').open){e.preventDefault();$('#search').focus();}});
 refresh(true);
 
-$('#downloads').onclick=()=>{detailId=null;const base='https://github.com/Tyler9169/local-workbench/releases/download/v2.1.1/';$('#detail-content').innerHTML=`<h2>下载安装包</h2><p>适用于 Apple Silicon Mac。</p><div class="download-list">${[['本地工作台','内置运行环境 · macOS 14+','LocalWorkbench-2.1.1-macOS-arm64.dmg'],['照片置顶','图片悬浮、锁定与缩放 · macOS 12+','PhotoPin-1.0-macOS-arm64.dmg'],['框录','区域截图、录屏与声音开关 · macOS 15+','FrameRecorder-1.1-macOS-arm64.dmg']].map(([name,note,file])=>`<a href="${base+file}" target="_blank" rel="noopener noreferrer"><span><strong>${name}</strong><small>${note}</small></span><span>下载 ↓</span></a>`).join('')}</div><p class="field-help">未签名公证的测试版。首次打开可能需要在系统设置中允许；框录还需要屏幕录制和麦克风授权。</p><p><a href="https://github.com/Tyler9169/local-workbench/releases/tag/v2.1.1" target="_blank" rel="noopener noreferrer">安装说明与校验值 ↗</a></p>`;$('#detail').showModal();};
+$('#downloads').onclick=()=>{detailId=null;const base='https://github.com/Tyler9169/local-workbench/releases/download/v2.2.0/';$('#detail-content').innerHTML=`<h2>下载安装包</h2><p>适用于 Apple Silicon Mac。</p><div class="download-list">${[['本地工作台','内置运行环境 · macOS 14+','LocalWorkbench-2.2.0-macOS-arm64.dmg'],['照片置顶','图片悬浮、锁定与缩放 · macOS 12+','PhotoPin-1.0-macOS-arm64.dmg'],['框录','区域截图、录屏与声音开关 · macOS 15+','FrameRecorder-1.1-macOS-arm64.dmg']].map(([name,note,file])=>`<a href="${base+file}" target="_blank" rel="noopener noreferrer"><span><strong>${name}</strong><small>${note}</small></span><span>下载 ↓</span></a>`).join('')}</div><p class="field-help">未签名公证的测试版。首次打开可能需要在系统设置中允许；框录还需要屏幕录制和麦克风授权。</p><p><a href="https://github.com/Tyler9169/local-workbench/releases/tag/v2.2.0" target="_blank" rel="noopener noreferrer">安装说明与校验值 ↗</a></p>`;$('#detail').showModal();};
 
-setInterval(()=>{if(!document.hidden&&!$('#detail').open&&busy.size===0)refresh(true);},10000);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!$('#detail').open&&busy.size===0)refresh(true);});
+setInterval(()=>{if(!document.hidden&&!$('#detail').open&&!$('#updates').open&&busy.size===0)refresh(true);},10000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!$('#detail').open&&!$('#updates').open&&busy.size===0)refresh(true);});
+
+let updateTarget=null, updatePoll=null, updateDeadline=0;
+const updateActive=new Set(['checking','downloading','verifying','backing_up','installing','restarting']);
+function updateView(s){
+ $('#update-version').textContent=`当前版本 ${s.current}${s.latest?' · 最新版本 '+s.latest:''}${s.prerelease?'（测试版）':''}`;
+ $('#update-message').textContent=s.message;
+ $('#retry-update').disabled=updateActive.has(s.phase);
+ $('#install-update').hidden=!s.available;
+ $('#install-update').disabled=updateActive.has(s.phase);
+ $('#install-update').dataset.version=s.latest||'';
+ $('#update-release').hidden=!s.releaseUrl;
+ if(s.releaseUrl)$('#update-release').href=s.releaseUrl;
+}
+async function checkUpdate(){
+ $('#retry-update').disabled=true;$('#install-update').hidden=true;
+ $('#update-message').textContent='正在检查 GitHub 更新…';
+ try{updateView(await mutate('/api/update/check',{}));}
+ catch(e){$('#update-message').textContent=e.message;$('#retry-update').disabled=false;}
+}
+$('#check-update').onclick=async()=>{if(!$('#updates').open)$('#updates').showModal();await checkUpdate();};
+$('#retry-update').onclick=checkUpdate;
+$('#close-updates').onclick=()=>$('#updates').close();
+$('#install-update').onclick=async()=>{
+ const version=$('#install-update').dataset.version;
+ $('#install-update').disabled=true;
+ try{
+  const s=await mutate('/api/update/install',{version,favorites:[...favorites]});updateView(s);
+  updateTarget=version;updateDeadline=Date.now()+180000;clearTimeout(updatePoll);pollUpdate();
+ }catch(e){$('#update-message').textContent=e.message;$('#install-update').disabled=false;}
+};
+async function pollUpdate(){
+ try{
+  const r=await fetch('/api/update/status');if(!r.ok)throw Error('connection');const s=await r.json();
+  if(s.current===updateTarget){$('#update-message').textContent='更新完成，正在载入新版…';location.reload();return;}
+  updateView(s);
+  if(s.phase==='error'){updateTarget=null;return;}
+ }catch{ $('#update-message').textContent='正在重新连接工作台…'; }
+ if(Date.now()>updateDeadline){$('#update-message').textContent='连接等待超时。请重新打开工作台；工具和配置仍保存在原处。';$('#retry-update').disabled=false;return;}
+ updatePoll=setTimeout(pollUpdate,1000);
+}

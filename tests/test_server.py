@@ -61,7 +61,7 @@ class WorkbenchTests(unittest.TestCase):
         self.assertEqual(self.request('/api/tools', {**self.entry, 'id': 'second'})[0], 400)
 
     def test_cross_origin_rejected_for_all_writes(self):
-        for route in ('/api/tools', '/api/delete', '/api/action'):
+        for route in ('/api/tools', '/api/delete', '/api/action', '/api/update/check', '/api/update/install'):
             for origin in ('https://evil.example', 'null', ''):
                 self.assertEqual(self.request(route, self.entry, {'Origin': origin})[0], 403)
 
@@ -103,6 +103,20 @@ class WorkbenchTests(unittest.TestCase):
         self.assertEqual(self.request('/api/tools')[0], 500)
         self.assertEqual(self.request('/api/tools', self.entry)[0], 400)
         self.assertEqual(p.read_text(), '{broken')
+
+    def test_update_endpoints_validate_requests_and_return_progress(self):
+        from unittest.mock import Mock
+        manager=Mock()
+        manager.check.return_value={'phase':'current','current':'2.2.0'}
+        manager.status.return_value={'phase':'idle','current':'2.2.0'}
+        manager.start.return_value={'phase':'downloading'}
+        with patch.object(server,'UPDATE',manager):
+            self.assertEqual(self.request('/api/update/status')[0],200)
+            self.assertEqual(self.request('/api/update/check',{})[0],200)
+            self.assertEqual(self.request('/api/update/check',{'url':'bad'})[0],400)
+            self.assertEqual(self.request('/api/update/install',{'version':'2.2.1','favorites':[]})[0],202)
+            manager.start.assert_called_once_with('2.2.1',[])
+            self.assertEqual(self.request('/api/update/install',{'version':'2.2.1','favorites':[],'url':'bad'})[0],400)
 
     def test_oversized_and_wrong_content_type(self):
         self.assertEqual(self.request('/api/tools', {'text': 'a' * 17000})[0], 413)

@@ -2,7 +2,7 @@
 
 | 文件 | 应用 | 适用系统 |
 | --- | --- | --- |
-| LocalWorkbench-2.1.1-macOS-arm64.dmg | 本地工作台，内置运行环境 | Apple Silicon，macOS 14+ |
+| LocalWorkbench-2.2.0-macOS-arm64.dmg | 本地工作台，内置运行环境 | Apple Silicon，macOS 14+ |
 | PhotoPin-1.0-macOS-arm64.dmg | 照片置顶，图片悬浮、锁定和缩放 | Apple Silicon，macOS 12+ |
 | FrameRecorder-1.1-macOS-arm64.dmg | 框录，区域截图与录屏，独立声音开关 | Apple Silicon，macOS 15+ |
 

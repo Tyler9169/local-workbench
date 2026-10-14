@@ -1,4 +1,4 @@
-本地工作台 2.1.1
+本地工作台 2.2.0
 
 适用：Apple Silicon（M1/M2/M3/M4 等）Mac，macOS 14 或更新版本。
 将「本地工作台.app」拖入 Applications，然后从应用程序目录打开。
