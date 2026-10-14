@@ -1,5 +1,6 @@
 """Local Workbench: standard-library-only, loopback-only tool launcher."""
 import argparse
+import importlib.util
 import json
 import os
 import re
@@ -15,6 +16,12 @@ from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parent
 DATA = Path(os.environ.get('WORKBENCH_DATA_DIR', str(ROOT / 'data'))).expanduser().resolve()
+# Optional local integration is trusted Python code, never accepted through the API.
+INTEGRATION = None
+if (DATA / 'integration.py').is_file():
+    spec = importlib.util.spec_from_file_location('workbench_local_integration', DATA / 'integration.py')
+    INTEGRATION = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(INTEGRATION)
 LOCK = threading.RLock()
 CATEGORIES = ('日常工具', '影音创作', '开发分析', '资讯灵感')
 
@@ -136,7 +143,7 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 with LOCK:
                     items = load()
-                return self.send(200, {'tools': [present(e) for e in items], 'checkedAt': time.strftime('%H:%M:%S')})
+                return self.send(200, {'tools': [*(INTEGRATION.tools() if INTEGRATION else []), *[present(e) for e in items]], 'checkedAt': time.strftime('%H:%M:%S')})
             except (ValueError, OSError):
                 return self.send(500, {'error': '工具配置无法读取，请检查 data/tools.json；原文件没有被覆盖。'})
         files = {'/': ('index.html', 'text/html'), '/app.js': ('app.js', 'text/javascript'),
@@ -165,6 +172,8 @@ class Handler(BaseHTTPRequestHandler):
                 items = load()
                 if self.path == '/api/tools':
                     entry = validate(body)
+                    if INTEGRATION and any(t['id'] == entry['id'] for t in INTEGRATION.tools()):
+                        raise ValueError('这是本机集成入口，请在原配置中编辑。')
                     if any(x['target'] == entry['target'] and x['id'] != entry['id'] for x in items):
                         raise ValueError('这个地址已经添加过了。')
                     items = [entry if x['id'] == entry['id'] else x for x in items] if any(x['id'] == entry['id'] for x in items) else [*items, entry]
@@ -176,6 +185,11 @@ class Handler(BaseHTTPRequestHandler):
                 if set(body) != allowed or not all(isinstance(v, str) for v in body.values()):
                     raise ValueError('请求格式错误。')
                 entry = next((x for x in items if x['id'] == body['id']), None)
+                if not entry and INTEGRATION and self.path == '/api/action':
+                    if body['action'] not in ('open', 'folder', 'studio'):
+                        raise ValueError('未允许的操作。')
+                    message = INTEGRATION.action(body['id'], body['action'])
+                    return self.send(200, {'message': message})
                 if not entry:
                     return self.send(404, {'error': '工具不存在，请刷新。'})
                 if self.path == '/api/delete':

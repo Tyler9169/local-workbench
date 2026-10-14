@@ -15,6 +15,8 @@ class WorkbenchTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.data_patch = patch.object(server, 'DATA', Path(self.temp.name))
         self.data_patch.start()
+        self.integration_patch = patch.object(server, 'INTEGRATION', None)
+        self.integration_patch.start()
         self.http = server.ThreadingHTTPServer(('127.0.0.1', 0), server.Handler)
         threading.Thread(target=self.http.serve_forever, daemon=True).start()
         self.entry = dict(id='example', name='示例', type='url', category='日常工具', target='https://example.com', description='用途')
@@ -23,6 +25,7 @@ class WorkbenchTests(unittest.TestCase):
         self.http.shutdown()
         self.http.server_close()
         self.data_patch.stop()
+        self.integration_patch.stop()
         self.temp.cleanup()
 
     def request(self, path, body=None, headers=None):

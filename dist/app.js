@@ -7,34 +7,38 @@ let tools=[],category='全部工具',kind='全部形态',favorites=new Set(),fav
 try{const saved=JSON.parse(localStorage.getItem('workbench-favorites')||'[]');if(Array.isArray(saved))favorites=new Set(saved.filter(x=>typeof x==='string'));}catch{}
 const categories=[['全部工具','grid'],['日常工具','home'],['影音创作','play'],['开发分析','terminal'],['资讯灵感','spark']];
 function toast(message,error=false){clearTimeout(toastTimer);$('#toast').textContent=message;$('#toast').classList.toggle('error',error);$('#toast').hidden=false;toastTimer=setTimeout(()=>$('#toast').hidden=true,error?12000:6500);}
-function label(t){if(busy.has(t.id))return '正在打开…';if(t.kind==='桌面应用')return '打开应用';if(t.kind==='项目目录')return '打开目录';if(t.kind==='在线网页')return '打开网站';return t.state==='running'?'进入工具':'启动并打开';}
+function label(t){if(t.kind==='CLI / MCP')return '查看用法';if(busy.has(t.id))return '正在打开…';if(t.kind==='桌面应用')return '打开应用';if(t.kind==='项目目录')return '打开目录';if(t.kind==='在线网页')return '打开网站';return t.state==='running'?'进入工具':'启动并打开';}
 function render(){
- $('.edition strong').textContent=tools.length;
+ $('.quick').hidden=tools.length===0;
  $('#nav').innerHTML=categories.map(([name,icon])=>`<button class="nav-item ${category===name?'active':''}" data-category="${name}" aria-pressed="${category===name}">${svg(icon)}${name}<small>${name==='全部工具'?tools.length:tools.filter(t=>t.category===name).length}</small></button>`).join('');
- const kinds=['全部形态','桌面应用','在线网页','项目目录'];
+ const kinds=['全部形态',...new Set(tools.map(t=>t.kind))];
  $('#filters').innerHTML=kinds.map(k=>`<button class="filter" data-kind="${k}" aria-pressed="${kind===k}">${k}</button>`).join('');
  $('#favorite-filter').setAttribute('aria-pressed',favoritesOnly);$('#favorite-filter').textContent=favoritesOnly?'★ 只看收藏':'☆ 只看收藏';
  const query=$('#search').value.trim().toLocaleLowerCase();
  const visible=tools.filter(t=>(category==='全部工具'||t.category===category)&&(kind==='全部形态'||t.kind===kind)&&(!favoritesOnly||favorites.has(t.id))&&`${t.name} ${t.subtitle} ${t.description} ${t.category}`.toLocaleLowerCase().includes(query));
  $('#section-title').innerHTML=`${esc(category)} <span>${visible.length}</span>`;
- $('#grid').innerHTML=visible.map((t,i)=>`<article class="card"><div class="card-top"><div class="tool-icon tone-${categories.findIndex(c=>c[0]===t.category)-1}">${svg(t.icon)}</div><button class="icon-button star ${favorites.has(t.id)?'selected':''}" data-favorite="${t.id}" aria-pressed="${favorites.has(t.id)}" aria-label="${favorites.has(t.id)?'取消收藏':'收藏'} ${esc(t.name)}">${favorites.has(t.id)?'★':'☆'}</button></div><h3>${esc(t.name)}</h3><div class="subtitle">${esc(t.subtitle)}</div><p>${esc(t.description)}</p><div class="card-state ${t.state}"><i></i>${esc(t.status)}<span class="kind">${esc(t.kind)}</span></div><div class="card-actions"><button class="launch" data-open="${t.id}" ${busy.has(t.id)||!t.available?'disabled':''}>${label(t)}<span>↗</span></button><button class="detail-button" data-detail="${t.id}" aria-label="${esc(t.name)} 的详情">详情</button></div></article>`).join('');
+ $('#grid').innerHTML=visible.map((t,i)=>`<article class="card"><div class="card-top"><div class="tool-icon tone-${categories.findIndex(c=>c[0]===t.category)-1}">${svg(t.icon)}</div><button class="icon-button star ${favorites.has(t.id)?'selected':''}" data-favorite="${t.id}" aria-pressed="${favorites.has(t.id)}" aria-label="${favorites.has(t.id)?'取消收藏':'收藏'} ${esc(t.name)}">${favorites.has(t.id)?'★':'☆'}</button></div><h3>${esc(t.name)}</h3><p>${esc(t.description)}</p><div class="card-state ${t.state}"><i></i>${esc(t.status)}<span class="kind">${esc(t.kind)}</span></div><div class="card-actions"><button class="launch" data-open="${t.id}" ${busy.has(t.id)||!t.available?'disabled':''}>${label(t)}<span>↗</span></button><button class="detail-button" data-detail="${t.id}" aria-label="${esc(t.name)} 的详情">详情</button></div></article>`).join('');
  $('#empty').hidden=visible.length>0;
  $('#quick-tools').innerHTML=[...tools.filter(t=>favorites.has(t.id)),...tools.filter(t=>!favorites.has(t.id))].slice(0,3).map(t=>t.id).map(id=>{const t=tools.find(t=>t.id===id);return t?`<button class="quick-item" data-open="${id}" ${busy.has(id)||!t.available?'disabled':''}>${svg(t.icon)}<span>${esc(t.name)}<small>${busy.has(id)?'正在打开…':esc(t.kind)}</small></span><span class="arrow">↗</span></button>`:''}).join('');
 }
 async function refresh(quiet=false){
  $('#refresh').disabled=true;
- try{const r=await fetch('/api/tools');const data=await r.json();if(!r.ok)throw Error(data.error||'连接未完成');tools=data.tools;render();$('#status-summary').textContent=tools.length?`${tools.filter(t=>t.available).length} 个入口可用 · ${tools.length} 个已收录`:'还没有工具，点击「添加工具」创建第一个入口。';$('#checked').textContent=`状态检查于 ${data.checkedAt}`;if(!quiet)toast(data.warning||'已更新本地入口状态。',Boolean(data.warning));}
+ try{const r=await fetch('/api/tools');const data=await r.json();if(!r.ok)throw Error(data.error||'连接未完成');tools=data.tools;render();$('#status-summary').textContent=tools.length?`${tools.filter(t=>t.available).length} 个可用`:'还没有工具，点击「添加工具」创建第一个入口。';$('#checked').textContent=`状态检查于 ${data.checkedAt}`;if(!quiet)toast(data.warning||'已更新本地入口状态。',Boolean(data.warning));}
  catch(e){$('#status-summary').textContent=e.message||'无法连接工作台，请重新运行启动程序。';if(!quiet)toast('连接中断，请重新打开本地工作台。',true);}
  finally{$('#refresh').disabled=false;}
 }
 function details(id){
  const t=tools.find(t=>t.id===id);if(!t)return;detailId=id;
  $('#detail-content').innerHTML=`<div class="tool-icon">${svg(t.icon)}</div><h2>${esc(t.name)}</h2><div class="detail-status">${esc(t.kind)} · ${esc(t.status)}</div><p>${esc(t.note)}</p><h4>${t.path?'本机位置':'网页地址'}</h4><code class="path-box">${esc(t.path||t.url)}</code><div class="dialog-actions"><button class="primary" data-open="${id}" ${busy.has(id)||!t.available?'disabled':''}>${label(t)}</button><button class="secondary" data-action="folder" data-id="${id}">打开所在目录</button><button class="secondary" data-edit="${id}">编辑入口</button><button class="secondary danger" data-remove="${id}">移除入口</button></div>`;
+ if(t.managed){$('#detail-content [data-edit]')?.remove();$('#detail-content [data-remove]')?.remove();}
+ if(t.managed&&t.id==='hyperframes')$('#detail-content .dialog-actions').insertAdjacentHTML('beforeend','<button class="secondary" data-action="studio" data-id="hyperframes">进入已有 Studio</button>');
+ if(t.prompt)$('#detail-content .path-box').insertAdjacentHTML('afterend',`<p>${esc(t.prompt)}</p>`);
  if(t.extra&&t.url)$('#detail-content [data-action=folder]')?.remove();
  if(!$('#detail').open)$('#detail').showModal();
 }
 async function perform(id,action='open'){
  const t=id==='workbench'?{}:tools.find(t=>t.id===id);if(!t||busy.has(id))return;
+ if(t.kind==='CLI / MCP'&&action==='open'){details(id);return;}
  busy.add(id);render();if($('#detail').open&&detailId===id)details(id);
  try{const r=await fetch('/api/action',{method:'POST',headers:{'Content-Type':'application/json','X-Workbench':'1'},body:JSON.stringify({id,action})});const data=await r.json();if(!r.ok)throw Error(data.error||'操作未完成');toast(data.message);}
  catch(e){toast(e.message||'无法连接本机工作台。',true);}
