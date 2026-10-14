@@ -114,6 +114,8 @@ final class RegionView: NSView {
     var timer:Timer?
     var latestURL:URL?
     var pendingQuit=false
+    var displayLayout:[String]=[]
+    var selectionInvalidated=false
     var hotKeys:[EventHotKeyRef?]=[]
     var hotKeyResults:[String:Int32]=[:]
     let saveDirectory=FileManager.default.urls(for:.moviesDirectory,in:.userDomainMask)[0].appendingPathComponent("框录")
@@ -122,6 +124,7 @@ final class RegionView: NSView {
     func applicationDidFinishLaunching(_ notification:Notification){
         do {try FileManager.default.createDirectory(at:saveDirectory,withIntermediateDirectories:true);try FileManager.default.createDirectory(at:stateDirectory,withIntermediateDirectories:true)}catch{}
         setupMenu();setupHome();setupToolbar();setupHotkeys()
+        displayLayout=currentDisplayLayout()
         NotificationCenter.default.addObserver(self,selector:#selector(displaysChanged),name:NSApplication.didChangeScreenParametersNotification,object:nil)
         showHome();writeState("idle");updater.didLaunch()
     }
@@ -201,7 +204,7 @@ final class RegionView: NSView {
     }
     @objc func selectArea(){
         guard !isBusy else{return}
-        clearOverlays();home.orderOut(nil)
+        clearOverlays();selectionInvalidated=false;displayLayout=currentDisplayLayout();home.orderOut(nil)
         NSApp.activate(ignoringOtherApps:true)
         for screen in NSScreen.screens {
             let window=OverlayWindow(contentRect:screen.frame,styleMask:.borderless,backing:.buffered,defer:false)
@@ -293,7 +296,9 @@ final class RegionView: NSView {
             let rep=NSBitmapImageRep(cgImage:image)
             guard let data=rep.representation(using:.png,properties:[:]) else{throw NSError(domain:"框录",code:3)}
             let url=newURL("png");try data.write(to:url,options:.atomic)
-            latestURL=url;isBusy=false;clockLabel.stringValue="截图已保存 ✓";updateButtons();writeState("screenshot-saved")
+            latestURL=url;isBusy=false;clockLabel.stringValue="截图已保存 ✓";updateButtons()
+            if selectionInvalidated {clearOverlays();selectionInvalidated=false}
+            writeState("screenshot-saved")
             NSWorkspace.shared.activateFileViewerSelecting([url])
         }catch{handleError(error)}}
     }
@@ -324,6 +329,7 @@ final class RegionView: NSView {
             for w in self.overlays {w.ignoresMouseEvents=true;if w.contentView !== self.selected {w.orderOut(nil)}}
             self.timer=Timer.scheduledTimer(withTimeInterval:0.2,repeats:true){[weak self] _ in Task { @MainActor in self?.tick() }}
             self.tick();self.writeState("recording")
+            if self.selectionInvalidated { self.stopRecording() }
         }
     }
     func tick(){
@@ -340,7 +346,9 @@ final class RegionView: NSView {
         DispatchQueue.main.async {
             guard self.output === recordingOutput else{return}
             self.latestURL=self.outputURL;self.resetRecording()
-            self.clockLabel.stringValue="视频已保存 ✓";self.writeState("video-saved")
+            self.clockLabel.stringValue="视频已保存 ✓"
+            if self.selectionInvalidated { self.clearOverlays(); self.selectionInvalidated=false }
+            self.writeState("video-saved")
             if let url=self.latestURL {NSWorkspace.shared.activateFileViewerSelecting([url])}
             if self.pendingQuit {NSApp.terminate(nil)}
         }
@@ -367,9 +375,22 @@ final class RegionView: NSView {
         let alert=NSAlert();alert.messageText="未能完成捕获";alert.informativeText=error.localizedDescription+"\n请检查系统屏幕录制权限；如刚授权，请退出并重新打开框录。";alert.runModal()
         if pendingQuit {NSApp.terminate(nil)}
     }
+    func currentDisplayLayout()->[String] {
+        NSScreen.screens.map { screen in
+            let id=screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber
+            return "\(id?.uint32Value ?? 0):\(screen.frame):\(screen.backingScaleFactor)"
+        }.sorted()
+    }
     @objc func displaysChanged(){
+        let layout=currentDisplayLayout()
+        guard layout != displayLayout else { return }
+        displayLayout=layout
+        // Notifications also arrive without a capture-layout change. Never activate
+        // or reopen a dismissed panel from this background callback.
+        statusLabel.stringValue="显示器布局已变化，请重新框选区域。"
+        selectionInvalidated = !overlays.isEmpty
         if isRecording {stopRecording()}
-        else if !isBusy {clearOverlays();showHome();statusLabel.stringValue="显示器布局已变化，请重新框选区域。"}
+        else if !isBusy {clearOverlays();selectionInvalidated=false;writeState("display-layout-changed")}
     }
     @objc func quit(){
         if isRecording {pendingQuit=true;stopRecording()}
