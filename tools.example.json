@@ -1,0 +1,10 @@
+[
+  {
+    "id": "example-web",
+    "name": "示例网页",
+    "category": "资讯灵感",
+    "type": "url",
+    "target": "https://example.com",
+    "description": "替换为你自己的常用网址。"
+  }
+]
