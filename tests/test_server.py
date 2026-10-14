@@ -118,8 +118,11 @@ class DiscoveryTests(WorkbenchTests):
         self.roots_patch.start()
         self.platform_patch = patch.object(server.discovery, 'sys', SimpleNamespace(platform='darwin'))
         self.platform_patch.start()
+        self.server_platform_patch = patch.object(server, 'sys', SimpleNamespace(platform='darwin'))
+        self.server_platform_patch.start()
 
     def tearDown(self):
+        self.server_platform_patch.stop()
         self.platform_patch.stop()
         self.roots_patch.stop()
         super().tearDown()
