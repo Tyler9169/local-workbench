@@ -167,6 +167,14 @@ class DiscoveryTests(WorkbenchTests):
         self.assertEqual(self.tools(), [])
         self.assertFalse((server.DATA / 'tools.json').exists())
 
+    def test_timer_is_discovered_after_install_and_rename(self):
+        timer = self.app('TimerRenamed', 'local.tyler.stagetimer')
+        items = self.tools()
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0]['name'], '留刻计时器')
+        self.assertEqual(items[0]['path'], str(timer.resolve()))
+        self.assertEqual(items[0]['id'], 'auto-stagetimer')
+
     def test_user_copy_preferred_and_manual_entry_deduplicated(self):
         user = self.app(root=0)
         self.app(root=1)

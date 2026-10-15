@@ -8,11 +8,12 @@
 
 ## 下载安装包
 
-[前往 GitHub Releases 下载](https://github.com/Tyler9169/local-workbench/releases/tag/v2.2.3)，或点击工作台左下角「下载安装包」。
+[前往 GitHub Releases 下载](https://github.com/Tyler9169/local-workbench/releases/tag/v2.2.4)，或点击工作台左下角「下载安装包」。
 
 | 应用 | 平台 | 系统要求 |
 | --- | --- | --- |
-| 本地工作台 2.2.3 | Apple Silicon Mac | macOS 14+ |
+| 本地工作台 2.2.4 | Apple Silicon Mac | macOS 14+ |
+| 留刻计时器 1.0.0 | Apple Silicon Mac | macOS 13.5+ |
 | 照片置顶 1.1.0 | Apple Silicon Mac | macOS 12+ |
 | 框录 1.2.2 | Apple Silicon Mac | macOS 15+ |
 
@@ -20,7 +21,7 @@
 
 这些是未经过 Apple 开发者签名、公证的测试版。首次打开可能被系统拦截，请核对来源后在「系统设置 → 隐私与安全性」允许本次打开。框录需要用户手动授权屏幕录制，开启麦克风时需要麦克风授权。Intel Mac、Windows 和 Linux 暂无二进制安装包；工作台可继续通过下方源码部署。
 
-工作台自动识别 `/Applications` 和 `~/Applications` 中的照片置顶、框录，每 10 秒及切回页面时检查，无需填写路径。应用按 bundle ID 识别，改名仍可发现；两处都有安装时优先用户 Applications，已有同一应用入口不会重复显示。其他工具仍可手动添加。最低系统版本依据编译目标和依赖检查，实际运行验证在 macOS 26 的 Apple Silicon Mac 上完成，尚未逐一测试旧系统。
+工作台自动识别 `/Applications` 和 `~/Applications` 中的照片置顶、框录、留刻计时器，每 10 秒及切回页面时检查，无需填写路径。应用按 bundle ID 识别，改名仍可发现；两处都有安装时优先用户 Applications，已有同一应用入口不会重复显示。其他工具仍可手动添加。最低系统版本依据编译目标和依赖检查，实际运行验证在 macOS 26 的 Apple Silicon Mac 上完成，尚未逐一测试旧系统。
 
 ## 快速开始
 
@@ -155,3 +156,7 @@ zsh tools/framerecorder/build.sh
 自签名可以提供跨版本稳定身份，但不等于 Developer ID 或 Apple 公证，首次安装仍可能被系统拦截。从 ad-hoc 迁移时可能需要重新授权一次。后续版本必须使用同一签名身份，发布前验证权限延续；更新器也会拒绝不满足当前身份要求的包。长期保存私钥并制作安全备份。当前 GitHub 发布包不因本地配置而自动改变。
 
 框录 1.2.2 修复显示器参数通知反复唤起窗口的问题：关闭控制面板后保持隐藏，实际布局变化只处理选区；主动打开、菜单和快捷键仍可呼出。继续使用 1.2.1 的固定签名，更新保留设置。
+
+### 留刻计时器
+
+源码位于 `tools/stage-timer`。安装包内置 Node.js 和 Electron，无需终端。固定标识 `local.tyler.stagetimer`；工作台自动识别用户与系统 Applications。任务、悬浮设置和提示音位于 `~/Library/Application Support/StageTimer`，升级只替换应用。旧源码版先退出服务，再使用新版源码启动完成一次迁移；旧 `.data` 保留，已有目标不覆盖。未开启桌面模式的旧任务仍在原浏览器中，地址保持 127.0.0.1:43121。

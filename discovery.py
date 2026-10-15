@@ -1,4 +1,4 @@
-"""Discover only our two known macOS bundles; no indexing or recursive disk scan."""
+"""Discover only our known macOS bundles; no indexing or recursive disk scan."""
 import os
 import plistlib
 import sys
@@ -6,6 +6,7 @@ from pathlib import Path
 
 APP_ROOTS = (Path.home() / 'Applications', Path('/Applications'))
 KNOWN = {
+    'local.tyler.stagetimer': ('auto-stagetimer', '留刻计时器', '日常工具', '分阶段倒计时、桌面悬浮与自选提示音。'),
     'local.tyler.photopin': ('auto-photopin', '照片置顶', '日常工具', '图片悬浮、位置锁定与缩放。'),
     'local.tyler.framerecorder': ('auto-framerecorder', '框录', '影音创作', '区域截图与录屏，系统声音和麦克风独立开关。'),
 }
